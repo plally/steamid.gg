@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Info</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .user-info {
+            margin: 0 auto;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .avatar-container {
+            margin-right: 20px;
+        }
+
+        img {
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .info-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-item {
+            margin-bottom: 15px;
+        }
+
+        .info-item label,
+        .info-item p {
+            display: inline-block;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .profile-link {
+            color: #4bbfff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        .user-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-info">
+        <div class="avatar-container">
+            <img src="{{.Avatar}}" alt="User Avatar">
+        </div>
+        <div class="info-container">
+            <div class="user-name">{{.Username}}</div>
+
+            <div class="info-item">
+                <label>Username:</label>
+                <p>{{.Username}}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Real Name:</label>
+                <p>{{.RealName}}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Location:</label>
+                <p>{{.Location}}</p>
+            </div>
+
+            <div class="info-item">
+                <label>Account Creation Date:</label>
+                <p>{{.CreatedAt}}</p>
+            </div>
+    
+            <div class="info-item">
+                <label>Custom URL: </label>
+                <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
+            </div>
+
+            <div class="info-item">
+                <label>Profile URL:</label>
+                <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
+            </div>
+
+
+            <div class="info-item">
+                <label>SteamID32:</label>
+                <p>{{.SteamID32}}</p>
+            </div>
+
+            <div class="info-item">
+                <label>SteamID64:</label>
+                <p>{{.SteamID64}}</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

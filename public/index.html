@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Search</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .search-container {
+            text-align: center;
+        }
+
+        .search-box {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .search-button {
+            padding: 10px;
+            border: 1px solid #007bff;
+            background-color: #4bbfff;
+            color: #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        form {
+            margin: 0 auto;
+            width: 60%;
+        }
+
+        .error {
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+        }
+        .hint {
+            color: #999999;
+            font-family: 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <form action="/search" method="post">
+        <p class="hint">&#8226; Search by steam profile or custom urls</p>
+        <p class="hint">&#8226; Search by SteamID 32 or 64</p>
+        <input type="text" name="search" class="search-box" placeholder="Enter SteamID or Custom URL" required>
+        <input type="submit" value="Search" class="search-button">
+        {{if .Error}}
+            <p class="error">&#8226; {{.Error}}</p>
+        {{end}}
+    </form>
+</body>
+</html>
+

@@ -41,11 +41,11 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 			redirectError(w, r, "Could not find any steam user")
 			return
 		}
-		http.Redirect(w, r, "/user/"+steamID, http.StatusFound)
+		http.Redirect(w, r, "/user/"+steamID, http.StatusSeeOther)
 	}
 
 	if q.SteamID64 != "" {
-		http.Redirect(w, r, "/user/"+q.SteamID64, http.StatusFound)
+		http.Redirect(w, r, "/user/"+q.SteamID64, http.StatusSeeOther)
 	}
 
 	if q.SteamID32 != "" {
@@ -55,7 +55,7 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 			redirectError(w, r, "Could not find any steam user")
 			return
 		}
-		http.Redirect(w, r, "/user/"+steamID64, http.StatusFound)
+		http.Redirect(w, r, "/user/"+steamID64, http.StatusSeeOther)
 	}
 }
 

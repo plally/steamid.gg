@@ -70,15 +70,16 @@ func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 type PlayerData struct {
-	Username   string
-	Avatar     string
-	CustomURL  string
-	ProfileURL string
-	RealName   string
-	SteamID32  string
-	SteamID64  string
-	Location   string
-	CreatedAt  string
+	Username    string
+	Avatar      string
+	CustomURL   string
+	ProfileURL  string
+	RealName    string
+	SteamID32   string
+	SteamID64   string
+	Location    string
+	CreatedAt   string
+	LastUpdated string
 }
 
 func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
@@ -98,15 +99,16 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.tpl.ExecuteTemplate(w, "user.html", PlayerData{
-		Username:   ply.PersonaName,
-		Avatar:     ply.Avatarfull,
-		CustomURL:  ply.ProfileURL,
-		ProfileURL: fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.Steamid),
-		CreatedAt:  time.Unix(int64(ply.Timecreated), 0).Format(time.UnixDate),
-		RealName:   ply.Realname,
-		SteamID32:  steam32,
-		SteamID64:  ply.Steamid,
-		Location:   ply.Loccountrycode,
+		Username:    ply.PersonaName,
+		Avatar:      ply.Avatarfull,
+		CustomURL:   ply.ProfileURL,
+		ProfileURL:  fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.Steamid),
+		CreatedAt:   time.Unix(int64(ply.Timecreated), 0).Format(time.ANSIC),
+		RealName:    ply.Realname,
+		SteamID32:   steam32,
+		SteamID64:   ply.Steamid,
+		Location:    ply.Loccountrycode,
+		LastUpdated: time.Now().Format(time.ANSIC),
 	})
 
 	if err != nil {

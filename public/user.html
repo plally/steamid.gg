@@ -68,6 +68,23 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+
+        .footer {
+            margin-top: 20px;
+        }
+
+        .back {
+            background-color: #4bbfff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
     </style>
 </head>
 <body>
@@ -118,7 +135,16 @@
                 <label>SteamID64:</label>
                 <p>{{.SteamID64}}</p>
             </div>
+
+            <div class="info-item">
+                <label>Last Updated</label>
+                <p>{{.LastUpdated}}</p>
+            </div>
         </div>
+    </div>
+
+    <div class="footer">
+        <button class="back" onclick="window.location.href = '/';">Search Again</button>
     </div>
 </body>
 </html>

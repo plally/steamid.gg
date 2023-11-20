@@ -108,7 +108,6 @@ func (s *SteamAPI) GetPlayerSummary(steamID string) (Player, error) {
 	if len(getPlayerSummariesResponse.Response.Players) == 0 {
 		return Player{}, fmt.Errorf("steam api returned no players")
 	}
-	fmt.Println(getPlayerSummariesResponse.Response.Players[0])
 
 	return getPlayerSummariesResponse.Response.Players[0], nil
 }

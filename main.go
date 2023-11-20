@@ -109,3 +109,17 @@ func steamID64to32(steam64 string) (string, error) {
 	return "STEAM_0:" + strconv.FormatInt(remainder, 10) + ":" + strconv.FormatInt(steamInt, 10), nil
 
 }
+
+func steamID64toSteamID3(steam64 string) (string, error) {
+	steamInt, err := strconv.ParseInt(steam64, 10, 64)
+	if err != nil {
+		return "", errors.New("failed to parse steamid64")
+	}
+
+	if steamInt <= 76561197960265728 {
+		return "", errors.New("steamid too small")
+	}
+
+	steamInt = steamInt - 76561197960265728
+	return "[U:1:" + strconv.FormatInt(steamInt, 10) + "]", nil
+}

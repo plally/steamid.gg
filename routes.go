@@ -77,6 +77,7 @@ type PlayerData struct {
 	RealName    string
 	SteamID32   string
 	SteamID64   string
+	SteamID3    string
 	Location    string
 	CreatedAt   string
 	LastUpdated string
@@ -98,6 +99,11 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	steamID3, err := steamID64toSteamID3(steamID)
+	if err != nil {
+		log.With("err", err).Error("failed to convert steamid64 to steamid3")
+	}
+
 	err = s.tpl.ExecuteTemplate(w, "user.html", PlayerData{
 		Username:    ply.PersonaName,
 		Avatar:      ply.Avatarfull,
@@ -108,6 +114,7 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		SteamID32:   steam32,
 		SteamID64:   ply.Steamid,
 		Location:    ply.Loccountrycode,
+		SteamID3:    steamID3,
 		LastUpdated: time.Now().Format(time.ANSIC),
 	})
 

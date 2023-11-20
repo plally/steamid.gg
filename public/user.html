@@ -86,6 +86,18 @@
             transition: background-color 0.2s ease-in-out;
         }
 
+        .info-container h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0px;
+            margin-top: 20px;
+        }
+        hr {
+            border: none;
+            border-bottom: 1px solid #4bbfff;
+            margin: 5px 0;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +108,9 @@
         <div class="info-container">
             <div class="user-name">{{.Username}}</div>
 
+
+            <h1>Profile Info</h1>
+            <hr>
             <div class="info-item">
                 <label>Username:</label>
                 <p>{{.Username}}</p>
@@ -116,6 +131,7 @@
                 <p>{{.CreatedAt}}</p>
             </div>
     
+
             <div class="info-item">
                 <label>Custom URL: </label>
                 <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
@@ -126,7 +142,8 @@
                 <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
             </div>
 
-
+            <h1>IDs</h1>
+            <hr>
             <div class="info-item">
                 <label>SteamID32:</label>
                 <p>{{.SteamID32}}</p>
@@ -137,6 +154,13 @@
                 <p>{{.SteamID64}}</p>
             </div>
 
+            <div class="info-item">
+                <label>SteamID3:</label>
+                <p>{{.SteamID3}}</p>
+            </div>
+
+            <h1>Other</h1>
+            <hr>
             <div class="info-item">
                 <label>Last Updated</label>
                 <p>{{.LastUpdated}}</p>

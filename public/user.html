@@ -168,8 +168,12 @@
         </div>
     </div>
 
-    <div class="footer">
-        <button class="back" onclick="window.location.href = '/';">Search Again</button>
-    </div>
+    <form action="/search" method="post">
+        <input type="text" name="search" class="search-box" placeholder="Enter SteamID or Custom URL" required>
+        <input type="submit" value="Search" class="search-button">
+        {{if .Error}}
+            <p class="error">&#8226; {{.Error}}</p>
+        {{end}}
+    </form>
 </body>
 </html>

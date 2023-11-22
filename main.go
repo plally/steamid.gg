@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"log/slog"
@@ -76,50 +75,4 @@ func parseSteamQuery(query string) (Query, error) {
 		return Query{CustomURLName: name}, nil
 	}
 	return Query{}, ErrInvalidQuery
-}
-
-// copied from https://github.com/MrWaggel/gosteamconv/tree/master
-func steamID32to64(steamString string) (string, error) {
-	Y, err := strconv.Atoi(steamString[8:9])
-	if err != nil {
-		return "", err
-	}
-
-	Z, err := strconv.Atoi(steamString[10:])
-	if err != nil {
-		return "", err
-	}
-	i := int64((Z * 2) + 76561197960265728 + Y)
-
-	return strconv.FormatInt(i, 10), nil
-}
-func steamID64to32(steam64 string) (string, error) {
-	steamInt, err := strconv.ParseInt(steam64, 10, 64)
-	if err != nil {
-		return "", errors.New("failed to parse steamid64")
-	}
-
-	if steamInt <= 76561197960265728 {
-		return "", errors.New("steamid too small")
-	}
-
-	steamInt = steamInt - 76561197960265728
-	remainder := steamInt % 2
-	steamInt = steamInt / 2
-	return "STEAM_0:" + strconv.FormatInt(remainder, 10) + ":" + strconv.FormatInt(steamInt, 10), nil
-
-}
-
-func steamID64toSteamID3(steam64 string) (string, error) {
-	steamInt, err := strconv.ParseInt(steam64, 10, 64)
-	if err != nil {
-		return "", errors.New("failed to parse steamid64")
-	}
-
-	if steamInt <= 76561197960265728 {
-		return "", errors.New("steamid too small")
-	}
-
-	steamInt = steamInt - 76561197960265728
-	return "[U:1:" + strconv.FormatInt(steamInt, 10) + "]", nil
 }

@@ -16,6 +16,7 @@ type SteamAPI struct {
 func New(apiKey string) *SteamAPI {
 	return &SteamAPI{
 		APIKey: apiKey,
+
 		client: http.Client{
 			Timeout: time.Second * 10,
 		},

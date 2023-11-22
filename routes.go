@@ -10,12 +10,15 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/plally/steamid.id/internal/db"
 	"github.com/plally/steamid.id/internal/steamapi"
+	"github.com/plally/steamid.id/internal/steamid"
 )
 
 type routeState struct {
 	steamAPI *steamapi.SteamAPI
 	tpl      *template.Template
+	db       *db.RedisStore
 }
 
 func redirectError(w http.ResponseWriter, r *http.Request, err string) {
@@ -49,13 +52,14 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if q.SteamID32 != "" {
-		steamID64, err := steamID32to64(q.SteamID32)
+		s, err := steamid.SteamID32(q.SteamID32)
 		if err != nil {
-			log.With("err", err).Info("failed to convert steamid32 to steamid64")
+			log.With("err", err).Info("failed to parse steamid32")
 			redirectError(w, r, "Could not find any steam user")
 			return
 		}
-		http.Redirect(w, r, "/user/"+steamID64, http.StatusSeeOther)
+
+		http.Redirect(w, r, "/user/"+s.SteamID64String(), http.StatusSeeOther)
 	}
 }
 
@@ -81,27 +85,24 @@ type PlayerData struct {
 	Location    string
 	CreatedAt   string
 	LastUpdated string
+	Error       string
 }
 
 func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
-	steamID := chi.URLParam(r, "steamid")
-	log := slog.With("steamid", steamID)
-	ply, err := s.steamAPI.GetPlayerSummary(steamID)
+	steamID64 := chi.URLParam(r, "steamid")
+	log := slog.With("steamid", steamID64)
+	ply, err := s.steamAPI.GetPlayerSummary(steamID64)
 	if err != nil {
 		log.With("err", err).Error("failed to get player summary")
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	steam32, err := steamID64to32(steamID)
+
+	steamID, err := steamid.SteamID64(steamID64)
 	if err != nil {
-		log.With("err", err).Error("failed to convert steamid64 to steamid32")
+		log.With("err", err).Error("failed to parse steamid64")
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
-	}
-
-	steamID3, err := steamID64toSteamID3(steamID)
-	if err != nil {
-		log.With("err", err).Error("failed to convert steamid64 to steamid3")
 	}
 
 	err = s.tpl.ExecuteTemplate(w, "user.html", PlayerData{
@@ -111,10 +112,10 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		ProfileURL:  fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.Steamid),
 		CreatedAt:   time.Unix(int64(ply.Timecreated), 0).Format(time.ANSIC),
 		RealName:    ply.Realname,
-		SteamID32:   steam32,
-		SteamID64:   ply.Steamid,
+		SteamID32:   steamID.SteamID32String(),
+		SteamID64:   steamID.SteamID64String(),
 		Location:    ply.Loccountrycode,
-		SteamID3:    steamID3,
+		SteamID3:    steamID.SteamID3String(),
 		LastUpdated: time.Now().Format(time.ANSIC),
 	})
 

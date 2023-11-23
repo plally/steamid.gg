@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"errors"
 	"html/template"
 	"log"
@@ -15,12 +14,9 @@ import (
 	"github.com/plally/steamid.id/internal/steamapi"
 )
 
-//go:embed public/*
-var resources embed.FS
-
 func main() {
 	slog.Info("starting server")
-	tpl, err := template.ParseFS(resources, "public/index.html", "public/user.html")
+	tpl, err := template.ParseFS(resources, "public/index.html", "public/user.html", "public/components.html")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -10,15 +12,16 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/plally/steamid.id/internal/db"
 	"github.com/plally/steamid.id/internal/steamapi"
 	"github.com/plally/steamid.id/internal/steamid"
 )
 
+//go:embed public/*
+var resources embed.FS
+
 type routeState struct {
 	steamAPI *steamapi.SteamAPI
 	tpl      *template.Template
-	db       *db.RedisStore
 }
 
 func redirectError(w http.ResponseWriter, r *http.Request, err string) {
@@ -138,6 +141,12 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template) *chi.Mux {
 	r.Get("/", s.getIndex)
 	r.Post("/search", s.PostSearch)
 	r.Get("/user/{steamid}", s.getUser)
+
+	fs, err := fs.Sub(resources, "public")
+	if err != nil {
+		panic(err)
+	}
+	r.Handle("/static/*", http.FileServer(http.FS(fs)))
 
 	return r
 }

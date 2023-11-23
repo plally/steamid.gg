@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta property='og:title' content='{{.Username}}' />
+    <meta property='og:description' content="{{.SteamID64}}
+{{.SteamID32}}
+{{.CustomURL}}"/>
+    <meta property='og:image' content='{{.Avatar}}' />
+    <meta property='og:url' content='https://steamid.gay/user/{{.SteamID64}}' />
+    <meta property='og:type' content='website' />
+
     <title>{{.Username}}</title>
+    <link rel="stylesheet" href="/static/main.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,24 +84,13 @@
             margin-top: 20px;
         }
 
-        .back {
-            background-color: #4bbfff;
-            border: none;
-            border-radius: 5px;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-        }
-
         .info-container h1 {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 0px;
             margin-top: 20px;
         }
+
         hr {
             border: none;
             border-bottom: 1px solid #4bbfff;
@@ -99,47 +98,10 @@
             width: 100%;
         }
 
-        .search-container {
-            text-align: center;
-        }
-
-        .search-box {
-            width: 80%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            background-color: #1a1a1a;
-            color: #ffffff;
-        }
-
-        .search-button {
-            padding: 10px;
-            border: 1px solid #007bff;
-            background-color: #4bbfff;
-            color: #ffffff;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
         form {
-            margin: 10px auto;
-            background-color: #2a2a2a;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .error {
-            color: #ff0000;
-            font-family: 'Arial', sans-serif;
-        }
-        .hint {
-            color: #999999;
-            font-family: 'Arial', sans-serif;
+            margin: 0 auto;
+            margin-top: 20px;
+            width: 60%;
         }
     </style>
 </head>
@@ -212,11 +174,7 @@
     </div>
 
     <form action="/search" method="post">
-        <input type="text" name="search" class="search-box" placeholder="Enter SteamID or Custom URL" required>
-        <input type="submit" value="Search" class="search-button">
-        {{if .Error}}
-            <p class="error">&#8226; {{.Error}}</p>
-        {{end}}
+        {{ template "search-bar" . }}
     </form>
 </body>
 </html>

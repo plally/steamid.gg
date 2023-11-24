@@ -23,16 +23,6 @@
             padding: 20px;
         }
 
-        .user-info {
-            margin: 0 auto;
-            background-color: #2a2a2a;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: flex-start;
-        }
-
         .avatar-container {
             margin-right: 20px;
         }
@@ -44,11 +34,15 @@
         }
 
         .info-container {
+            margin: 0 auto;
+            width: 60%;
             display: flex;
             flex-direction: column;
         }
 
         .info-item {
+            display: flex;
+            flex-direction: row;
             margin-bottom: 15px;
         }
 
@@ -103,78 +97,86 @@
             margin-top: 20px;
             width: 60%;
         }
+
+        .copy {
+            margin-left: auto;
+            cursor: pointer;
+            background-color: #1a1a1a; 
+            color: #ffffff; 
+            border: none;
+        }
     </style>
 </head>
 <body>
-    <div class="user-info">
-        <div class="avatar-container">
-            <img src="{{.Avatar}}" alt="User Avatar">
-        </div>
-        <div class="info-container">
-            <div class="user-name">{{.Username}}</div>
-
-
-            <h1>Profile Info</h1>
-            <hr>
-            <div class="info-item">
-                <label>Username:</label>
-                <p>{{.Username}}</p>
-            </div>
-
-            <div class="info-item">
-                <label>Real Name:</label>
-                <p>{{.RealName}}</p>
-            </div>
-
-            <div class="info-item">
-                <label>Location:</label>
-                <p>{{.Location}}</p>
-            </div>
-
-            <div class="info-item">
-                <label>Account Creation Date:</label>
-                <p>{{.CreatedAt}}</p>
-            </div>
-    
-
-            <div class="info-item">
-                <label>Custom URL: </label>
-                <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
-            </div>
-
-            <div class="info-item">
-                <label>Profile URL:</label>
-                <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
-            </div>
-
-            <h1>IDs</h1>
-            <hr>
-            <div class="info-item">
-                <label>SteamID32:</label>
-                <p>{{.SteamID32}}</p>
-            </div>
-
-            <div class="info-item">
-                <label>SteamID64:</label>
-                <p>{{.SteamID64}}</p>
-            </div>
-
-            <div class="info-item">
-                <label>SteamID3:</label>
-                <p>{{.SteamID3}}</p>
-            </div>
-
-            <h1>Other</h1>
-            <hr>
-            <div class="info-item">
-                <label>Last Updated</label>
-                <p>{{.LastUpdated}}</p>
-            </div>
-        </div>
-    </div>
-
+    {{ define "item-content" }}
+        <p>{{.}}</p>
+        <button class="copy" onclick="navigator.clipboard.writeText({{.}});">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+    {{ end }}
     <form action="/search" method="post">
         {{ template "search-bar" . }}
     </form>
+    <div class="info-container">
+        <div class="avatar-container">
+            <img src="{{.Avatar}}" alt="User Avatar">
+        </div>
+        <div class="user-name">{{.Username}}</div>
+        <h1>Profile Info</h1>
+        <hr>
+        <div class="info-item">
+            <label>Username:</label>
+            <p>{{.Username}}</p>
+        </div>
+
+        <div class="info-item">
+            <label>Real Name:</label>
+            <p>{{.RealName}}</p>
+        </div>
+
+        <div class="info-item">
+            <label>Location:</label>
+            <p>{{.Location}}</p>
+        </div>
+
+        <div class="info-item">
+            <label>Account Creation Date:</label>
+            <p>{{.CreatedAt}}</p>
+        </div>
+
+        <div class="info-item">
+            <label>Custom URL: </label>
+            <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
+        </div>
+
+        <div class="info-item">
+            <label>Profile URL:</label>
+            <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
+        </div>
+
+        <h1>IDs</h1>
+        <hr>
+        <div class="info-item">
+            <label>SteamID32:</label>
+            {{ template "item-content" .SteamID32 }}
+        </div>
+
+        <div class="info-item">
+            <label>SteamID64:</label>
+            {{ template "item-content" .SteamID64 }}
+        </div>
+
+        <div class="info-item">
+            <label>SteamID3:</label>
+            {{ template "item-content" .SteamID3 }}
+        </div>
+
+        <h1>Other</h1>
+        <hr>
+        <div class="info-item">
+            <label>Last Updated</label>
+            <p>{{.LastUpdated}}</p>
+        </div>
+    </div>
 </body>
 </html>

@@ -146,6 +146,7 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template) *chi.Mux {
 	if err != nil {
 		panic(err)
 	}
+
 	r.Handle("/static/*", http.FileServer(http.FS(fs)))
 
 	return r

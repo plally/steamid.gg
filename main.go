@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"log/slog"
 
@@ -23,6 +24,8 @@ func main() {
 	steamAPI := steamapi.New(os.Getenv("STEAM_API_KEY"))
 
 	r := GetRouter(steamAPI, tpl)
+
+	os.WriteFile("buildtime.txt", []byte(time.Now().Format(time.RFC1123)), 0644)
 
 	err = http.ListenAndServe(":8080", r)
 	if err != nil {

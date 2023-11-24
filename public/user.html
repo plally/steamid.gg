@@ -24,6 +24,8 @@
         }
 
         .avatar-container {
+            display: flex;
+            flex-direction: row;
             margin-right: 20px;
         }
 
@@ -69,8 +71,9 @@
         }
 
         .user-name {
-            font-size: 24px;
+            font-size: 50px;
             font-weight: bold;
+            margin-left: 20px;
             margin-bottom: 10px;
         }
 
@@ -120,8 +123,8 @@
     <div class="info-container">
         <div class="avatar-container">
             <img src="{{.Avatar}}" alt="User Avatar">
+            <div class="user-name">{{.Username}}</div>
         </div>
-        <div class="user-name">{{.Username}}</div>
         <h1>Profile Info</h1>
         <hr>
         <div class="info-item">

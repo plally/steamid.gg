@@ -40,12 +40,14 @@ var (
 	steamProfilePattern = regexp.MustCompile(`^https?:\/\/steamcommunity\.com\/profiles\/([0-9]+)\/?$`)
 	steamID64Pattern    = regexp.MustCompile(`^([0-9]{17})$`)
 	steamID32Pattern    = regexp.MustCompile(`^STEAM_([0-1]):([0-1]):([0-9]+)$`)
+	stemID3Pattern      = regexp.MustCompile(`^\[U:1:[0-9]+\]$`)
 )
 
 type Query struct {
 	CustomURLName string
 	SteamID64     string
 	SteamID32     string
+	SteamID3      string
 }
 
 var ErrInvalidQuery = errors.New("invalid query")
@@ -72,6 +74,9 @@ func parseSteamQuery(query string) (Query, error) {
 	if customNamePattern.MatchString(query) {
 		name := customNamePattern.FindStringSubmatch(query)[1]
 		return Query{CustomURLName: name}, nil
+	}
+	if stemID3Pattern.MatchString(query) {
+		return Query{SteamID3: query}, nil
 	}
 	return Query{}, ErrInvalidQuery
 }

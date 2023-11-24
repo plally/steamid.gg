@@ -54,6 +54,16 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/user/"+q.SteamID64, http.StatusSeeOther)
 	}
 
+	if q.SteamID3 != "" {
+		s, err := steamid.SteamID3(q.SteamID3)
+		if err != nil {
+			log.With("err", err).Info("failed to parse steamid3")
+			redirectError(w, r, "Could not find any steam user")
+			return
+		}
+		http.Redirect(w, r, "/user/"+s.SteamID64String(), http.StatusSeeOther)
+	}
+
 	if q.SteamID32 != "" {
 		s, err := steamid.SteamID32(q.SteamID32)
 		if err != nil {

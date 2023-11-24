@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testQueryMatching(t *testing.T) {
+func TestQueryMatching(t *testing.T) {
 	data := []struct {
 		query    string
 		expected Query
@@ -14,6 +14,10 @@ func testQueryMatching(t *testing.T) {
 		{
 			"https://steamcommunity.com/profiles/76561198115172591",
 			Query{SteamID64: "76561198115172591"},
+		},
+		{
+			"[U:1:154906863]",
+			Query{SteamID3: "[U:1:154906863]"},
 		},
 	}
 

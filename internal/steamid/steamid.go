@@ -3,11 +3,26 @@ package steamid
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type SteamID uint64
 
 const magicalSteamNumber = 76561197960265728
+
+func SteamID3(steamString string) (SteamID, error) {
+	split := strings.Split(steamString[:len(steamString)-1], ":")
+	if len(split) != 3 {
+		return 0, fmt.Errorf("invalid SteamID3")
+	}
+
+	w, err := strconv.Atoi(split[2])
+	if err != nil {
+		return 0, fmt.Errorf("invalid SteamID3: %w", err)
+	}
+
+	return SteamID(w + magicalSteamNumber), nil
+}
 
 func SteamID32(steamString string) (SteamID, error) {
 	Y, err := strconv.Atoi(steamString[8:9])

@@ -25,6 +25,10 @@ func main() {
 
 	r := GetRouter(steamAPI, tpl)
 
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
+
 	os.WriteFile("buildtime.txt", []byte(time.Now().Format(time.RFC1123)), 0644)
 
 	err = http.ListenAndServe(":8080", r)

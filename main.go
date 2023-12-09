@@ -12,10 +12,14 @@ import (
 
 	"log/slog"
 
+	"github.com/plally/steamid.id/internal/db"
 	"github.com/plally/steamid.id/internal/steamapi"
 )
 
 func main() {
+	db := db.NewRedis()
+	defer db.Close()
+
 	slog.Info("starting server")
 	tpl, err := template.ParseFS(resources, "public/index.html", "public/user.html", "public/components.html")
 	if err != nil {
@@ -23,7 +27,7 @@ func main() {
 	}
 	steamAPI := steamapi.New(os.Getenv("STEAM_API_KEY"))
 
-	r := GetRouter(steamAPI, tpl)
+	r := GetRouter(steamAPI, tpl, &db)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)

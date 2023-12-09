@@ -3,112 +3,77 @@ package steamapi
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"net/http"
+	"net/url"
 )
 
 type SteamAPI struct {
-	APIKey string
-	client http.Client
+	APIKey  string
+	client  http.Client
+	BaseURL string
+
+	done                 chan struct{}
+	steamSummaryRequests chan summaryRequest
 }
 
 func New(apiKey string) *SteamAPI {
-	return &SteamAPI{
-		APIKey: apiKey,
-
+	api := &SteamAPI{
+		APIKey:  apiKey,
+		BaseURL: "http://api.steampowered.com/",
 		client: http.Client{
 			Timeout: time.Second * 10,
 		},
+
+		done:                 make(chan struct{}),
+		steamSummaryRequests: make(chan summaryRequest, MAX_SUMMARY_REQUESTS*2),
 	}
+
+	go api.startNewWorker()
+	return api
 }
 
-type VanityURLResponse struct {
-	Response struct {
-		SteamID string `json:"steamid"`
-		Success int    `json:"success"`
-	} `json:"response"`
+func (s *SteamAPI) Close() {
+	close(s.done)
 }
 
-type Player struct {
-	Avatar                   string  `json:"avatar,omitempty"`
-	Avatarfull               string  `json:"avatarfull,omitempty"`
-	Avatarhash               string  `json:"avatarhash,omitempty"`
-	Avatarmedium             string  `json:"avatarmedium,omitempty"`
-	Communityvisibilitystate float64 `json:"communityvisibilitystate,omitempty"`
-	Loccityid                float64 `json:"loccityid,omitempty"`
-	Loccountrycode           string  `json:"loccountrycode,omitempty"`
-	Locstatecode             string  `json:"locstatecode,omitempty"`
-	PersonaName              string  `json:"personaname,omitempty"`
-	Personastate             float64 `json:"personastate,omitempty"`
-	Personastateflags        float64 `json:"personastateflags,omitempty"`
-	Primaryclanid            string  `json:"primaryclanid,omitempty"`
-	Profilestate             float64 `json:"profilestate,omitempty"`
-	ProfileURL               string  `json:"profileurl,omitempty"`
-	Realname                 string  `json:"realname,omitempty"`
-	Steamid                  string  `json:"steamid,omitempty"`
-	Timecreated              float64 `json:"timecreated,omitempty"`
-}
-
-type GetPlayerSummariesResponse struct {
-	Response struct {
-		Players []Player `json:"players,omitempty"`
-	} `json:"response,omitempty"`
-}
-
-// ResolveVanityURL description
-func (s *SteamAPI) ResolveVanityURL(vanityURL string) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s", s.APIKey, vanityURL), nil)
+func (s *SteamAPI) Get(path string, params map[string]string, out any) error {
+	reqUrl, err := url.Parse(fmt.Sprintf("%s/%s", s.BaseURL, path))
 	if err != nil {
-		return "", err
+		return err
 	}
 
+	q := reqUrl.Query()
+	q.Set("key", s.APIKey)
+	for k, v := range params {
+		q.Set(k, v)
+	}
+	reqUrl.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", reqUrl.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	slog.With("url", reqUrl.String()).Info("Doing GET request")
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("steam api returned %d", resp.StatusCode)
+		return fmt.Errorf("steam api returned %d", resp.StatusCode)
 	}
 
-	var vanityURLResponse VanityURLResponse
-	if err := json.NewDecoder(resp.Body).Decode(&vanityURLResponse); err != nil {
-		return "", err
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return err
 	}
 
-	if vanityURLResponse.Response.Success != 1 {
-		return "", fmt.Errorf("steam api returned %d", vanityURLResponse.Response.Success)
-	}
-
-	return vanityURLResponse.Response.SteamID, nil
+	return nil
 }
 
-func (s *SteamAPI) GetPlayerSummary(steamID string) (Player, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", s.APIKey, steamID), nil)
-	if err != nil {
-		return Player{}, err
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return Player{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return Player{}, fmt.Errorf("steam api returned %d", resp.StatusCode)
-	}
-
-	var getPlayerSummariesResponse GetPlayerSummariesResponse
-	if err := json.NewDecoder(resp.Body).Decode(&getPlayerSummariesResponse); err != nil {
-		return Player{}, err
-	}
-
-	if len(getPlayerSummariesResponse.Response.Players) == 0 {
-		return Player{}, fmt.Errorf("steam api returned no players")
-	}
-
-	return getPlayerSummariesResponse.Response.Players[0], nil
+type Response[T any] struct {
+	Response T `json:"response"`
 }

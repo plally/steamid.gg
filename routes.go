@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
@@ -12,8 +13,10 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/plally/steamid"
+	"github.com/plally/steamid.id/internal/db"
+	"github.com/plally/steamid.id/internal/matching"
 	"github.com/plally/steamid.id/internal/steamapi"
-	"github.com/plally/steamid.id/internal/steamid"
 )
 
 //go:embed public/*
@@ -22,6 +25,7 @@ var resources embed.FS
 type routeState struct {
 	steamAPI *steamapi.SteamAPI
 	tpl      *template.Template
+	db       *db.RedisStore
 }
 
 func redirectError(w http.ResponseWriter, r *http.Request, err string) {
@@ -32,48 +36,23 @@ func redirectError(w http.ResponseWriter, r *http.Request, err string) {
 func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 	queryString := r.FormValue("search")
 	log := slog.With("query", queryString)
-
-	q, err := parseSteamQuery(queryString)
+	resp, err := matching.ParseSteamQuery(r.Context(), matching.ParseRequest{
+		API:   s.steamAPI,
+		Query: queryString,
+	})
 	if err != nil {
-		log.With("err", err).Info("failed to parse query")
-		redirectError(w, r, "Could not find any steam user")
+		log.With("err", err).Error("failed to parse query")
+	}
+	if resp.SteamID == 0 {
+		if resp.Name != "" {
+			redirectError(w, r, fmt.Sprintf("Failed to resolve query as %v", resp.Name))
+		} else {
+			redirectError(w, r, "Failed to parse query, unknown query type")
+		}
 		return
 	}
 
-	if q.CustomURLName != "" {
-		steamID, err := s.steamAPI.ResolveVanityURL(q.CustomURLName)
-		if err != nil {
-			log.With("err", err).Info("failed to resolve vanity url")
-			redirectError(w, r, "Could not find any steam user")
-			return
-		}
-		http.Redirect(w, r, "/user/"+steamID, http.StatusSeeOther)
-	}
-
-	if q.SteamID64 != "" {
-		http.Redirect(w, r, "/user/"+q.SteamID64, http.StatusSeeOther)
-	}
-
-	if q.SteamID3 != "" {
-		s, err := steamid.SteamID3(q.SteamID3)
-		if err != nil {
-			log.With("err", err).Info("failed to parse steamid3")
-			redirectError(w, r, "Could not find any steam user")
-			return
-		}
-		http.Redirect(w, r, "/user/"+s.SteamID64String(), http.StatusSeeOther)
-	}
-
-	if q.SteamID32 != "" {
-		s, err := steamid.SteamID32(q.SteamID32)
-		if err != nil {
-			log.With("err", err).Info("failed to parse steamid32")
-			redirectError(w, r, "Could not find any steam user")
-			return
-		}
-
-		http.Redirect(w, r, "/user/"+s.SteamID64String(), http.StatusSeeOther)
-	}
+	http.Redirect(w, r, fmt.Sprintf("/user/%s", resp.SteamID.SteamID64String()), http.StatusSeeOther)
 }
 
 type IndexData struct {
@@ -101,16 +80,43 @@ type PlayerData struct {
 	Error       string
 }
 
+func (s *routeState) getPlayerSummary(ctx context.Context, steamID64 string) (*db.PlayerData, error) {
+	dbData, err := s.db.GetPlayerData(ctx, steamID64)
+	if err != nil {
+		return nil, err
+	}
+	if dbData != nil {
+		return dbData, nil
+	}
+
+	ply, err := s.steamAPI.GetPlayerSummary(ctx, steamID64)
+	if err != nil {
+		return nil, err
+	}
+
+	data := db.PlayerData{
+		Username:  ply.PersonaName,
+		Avatar:    ply.Avatarfull,
+		CustomURL: ply.ProfileURL,
+		RealName:  ply.Realname,
+		SteamID64: steamID64,
+		Location:  ply.Loccountrycode,
+		CreatedAt: int64(ply.Timecreated),
+
+		LastUpdated: time.Now().Unix(),
+	}
+
+	err = s.db.SetPlayerData(ctx, steamID64, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &data, nil
+}
 func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 	steamID64 := chi.URLParam(r, "steamid")
 	log := slog.With("steamid", steamID64)
-	ply, err := s.steamAPI.GetPlayerSummary(steamID64)
-	if err != nil {
-		log.With("err", err).Error("failed to get player summary")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
+	ctx := r.Context()
 	steamID, err := steamid.SteamID64(steamID64)
 	if err != nil {
 		log.With("err", err).Error("failed to parse steamid64")
@@ -118,18 +124,25 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ply, err := s.getPlayerSummary(ctx, steamID64)
+	if err != nil {
+		log.With("err", err).Error("failed to get player summary")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	err = s.tpl.ExecuteTemplate(w, "user.html", PlayerData{
-		Username:    ply.PersonaName,
-		Avatar:      ply.Avatarfull,
-		CustomURL:   ply.ProfileURL,
-		ProfileURL:  fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.Steamid),
-		CreatedAt:   time.Unix(int64(ply.Timecreated), 0).Format(time.ANSIC),
-		RealName:    ply.Realname,
+		Username:    ply.Username,
+		Avatar:      ply.Avatar,
+		CustomURL:   ply.CustomURL,
+		ProfileURL:  fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.SteamID64),
+		CreatedAt:   time.Unix(ply.CreatedAt, 0).Format(time.ANSIC),
+		RealName:    ply.RealName,
 		SteamID32:   steamID.SteamID32String(),
 		SteamID64:   steamID.SteamID64String(),
-		Location:    ply.Loccountrycode,
+		Location:    ply.Location,
 		SteamID3:    steamID.SteamID3String(),
-		LastUpdated: time.Now().Format(time.ANSIC),
+		LastUpdated: time.Unix(ply.LastUpdated, 0).Format(time.RFC3339),
 	})
 
 	if err != nil {
@@ -140,17 +153,21 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template) *chi.Mux {
+func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.RedisStore) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	s := &routeState{
 		steamAPI: steamAPI,
 		tpl:      tpl,
+		db:       db,
 	}
 
 	r.Get("/", s.getIndex)
 	r.Post("/search", s.PostSearch)
 	r.Get("/user/{steamid}", s.getUser)
+	r.Get("/lookup/{steamid}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, fmt.Sprintf("/user/%s", chi.URLParam(r, "steamid")), http.StatusSeeOther)
+	})
 
 	fs, err := fs.Sub(resources, "public")
 	if err != nil {

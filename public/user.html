@@ -121,7 +121,11 @@
             border: none;
         }
     </style>
+
+    <script src="/static/util.js"></script>
 </head>
+
+
 <body>
     {{ define "item-content" }}
         <p>{{.}}</p>
@@ -139,19 +143,24 @@
         </div>
         <h1>Profile Info</h1>
         <hr>
+
         <div class="info-item">
             <label>Username:</label>
             <p>{{.Username}}</p>
         </div>
 
         <div class="info-item">
+            {{ if .RealName }}
             <label>Real Name:</label>
             <p>{{.RealName}}</p>
+            {{ end }}
         </div>
 
         <div class="info-item">
+            {{ if .Location }}
             <label>Location:</label>
             <p>{{.Location}}</p>
+            {{ end }}
         </div>
 
         <div class="info-item">
@@ -160,13 +169,17 @@
         </div>
 
         <div class="info-item">
+            {{ if .CustomURL }}
             <label>Custom URL: </label>
             <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
+            {{ end }}
         </div>
 
         <div class="info-item">
+            {{ if .ProfileURL }}
             <label>Profile URL:</label>
             <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
+            {{ end }}
         </div>
 
         <h1>IDs</h1>
@@ -190,8 +203,16 @@
         <hr>
         <div class="info-item">
             <label>Last Updated</label>
-            <p>{{.LastUpdated}}</p>
+            <p id="last-updated">{{.LastUpdated}}</p>
         </div>
     </div>
 </body>
+
+<script>
+    const lastUpdated = document.getElementById("last-updated");
+    
+    const lastUpdatedValue = new Date("{{.LastUpdated}}");
+    lastUpdated.textContent = formatTimestamp(lastUpdatedValue);
+</script>
+
 </html>

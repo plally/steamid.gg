@@ -60,9 +60,14 @@ type IndexData struct {
 }
 
 func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
-	s.tpl.ExecuteTemplate(w, "index.html", IndexData{
+	err := s.tpl.ExecuteTemplate(w, "index.html", IndexData{
 		Error: r.URL.Query().Get("error"),
 	})
+	if err != nil {
+		slog.With("err", err).Error("failed to execute template")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 }
 
 type PlayerData struct {
@@ -174,6 +179,7 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.Redis
 		panic(err)
 	}
 
+	r.Handle("/favicon.ico", http.FileServer(http.FS(fs)))
 	r.Handle("/static/*", http.FileServer(http.FS(fs)))
 
 	return r

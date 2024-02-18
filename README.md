@@ -1,7 +1,2 @@
-# steamid64
-
-# TODO
-- caching
-- search bar in user page
-- meta tags for seo
-- center the info
+# steamid.gay
+A no frills steam ID using serverside go templating.

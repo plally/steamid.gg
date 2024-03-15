@@ -1,2 +1,2 @@
 # steamid.gay
-A no frills steam ID using serverside go templating.
+A no frills steam ID lookup using serverside go templating.

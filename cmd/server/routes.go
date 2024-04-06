@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/elnormous/contenttype"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/plally/steamid"
@@ -26,6 +28,11 @@ type routeState struct {
 	steamAPI *steamapi.SteamAPI
 	tpl      *template.Template
 	db       *db.RedisStore
+}
+
+var acceptedContentTypes = []contenttype.MediaType{
+	contenttype.NewMediaType("text/html"),
+	contenttype.NewMediaType("application/json"),
 }
 
 func redirectError(w http.ResponseWriter, r *http.Request, err string) {
@@ -135,8 +142,14 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	accepted, _, err := contenttype.GetAcceptableMediaType(r, acceptedContentTypes)
+	if err != nil {
+		slog.With("err", err).Error("failed to get acceptable media type")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
-	err = s.tpl.ExecuteTemplate(w, "user.html", PlayerData{
+	data := PlayerData{
 		Username:    ply.Username,
 		Avatar:      ply.Avatar,
 		CustomURL:   ply.CustomURL,
@@ -148,14 +161,26 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		Location:    ply.Location,
 		SteamID3:    steamID.SteamID3String(),
 		LastUpdated: time.Unix(ply.LastUpdated, 0).Format(time.RFC3339),
-	})
-
-	if err != nil {
-		log.With("err", err).Error("failed to execute template")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
 	}
 
+	switch accepted.String() {
+	case "text/html":
+		err = s.tpl.ExecuteTemplate(w, "user.html", data)
+		if err != nil {
+			log.With("err", err).Error("failed to execute template")
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	case "application/json":
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(data)
+		if err != nil {
+			log.With("err", err).Error("failed to encode json")
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+	}
 }
 
 func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.RedisStore) *chi.Mux {

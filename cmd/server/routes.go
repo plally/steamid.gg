@@ -12,12 +12,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/elnormous/contenttype"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/plally/steamid"
 	"github.com/plally/steamid.id/internal/db"
 	"github.com/plally/steamid.id/internal/matching"
+	"github.com/plally/steamid.id/internal/responses"
 	"github.com/plally/steamid.id/internal/steamapi"
 )
 
@@ -28,11 +28,6 @@ type routeState struct {
 	steamAPI *steamapi.SteamAPI
 	tpl      *template.Template
 	db       *db.RedisStore
-}
-
-var acceptedContentTypes = []contenttype.MediaType{
-	contenttype.NewMediaType("text/html"),
-	contenttype.NewMediaType("application/json"),
 }
 
 func redirectError(w http.ResponseWriter, r *http.Request, err string) {
@@ -67,6 +62,8 @@ type IndexData struct {
 }
 
 func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
+	responses.CacheControlCache6Month(w, r)
+
 	err := s.tpl.ExecuteTemplate(w, "index.html", IndexData{
 		Error: r.URL.Query().Get("error"),
 	})
@@ -125,7 +122,8 @@ func (s *routeState) getPlayerSummary(ctx context.Context, steamID64 string) (*d
 
 	return &data, nil
 }
-func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
+
+func (s *routeState) getUserAPI(w http.ResponseWriter, r *http.Request) {
 	steamID64 := chi.URLParam(r, "steamid")
 	log := slog.With("steamid", steamID64)
 	ctx := r.Context()
@@ -142,13 +140,6 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	accepted, _, err := contenttype.GetAcceptableMediaType(r, acceptedContentTypes)
-	if err != nil {
-		slog.With("err", err).Error("failed to get acceptable media type")
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
 	data := PlayerData{
 		Username:    ply.Username,
 		Avatar:      ply.Avatar,
@@ -163,23 +154,49 @@ func (s routeState) getUser(w http.ResponseWriter, r *http.Request) {
 		LastUpdated: time.Unix(ply.LastUpdated, 0).Format(time.RFC3339),
 	}
 
-	switch accepted.String() {
-	case "text/html":
-		err = s.tpl.ExecuteTemplate(w, "user.html", data)
-		if err != nil {
-			log.With("err", err).Error("failed to execute template")
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-	case "application/json":
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(data)
-		if err != nil {
-			log.With("err", err).Error("failed to encode json")
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
+	responses.CacheControlCacheForWeek(w, r)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
+}
 
+func (s *routeState) getUser(w http.ResponseWriter, r *http.Request) {
+	steamID64 := chi.URLParam(r, "steamid")
+	log := slog.With("steamid", steamID64)
+	ctx := r.Context()
+	steamID, err := steamid.SteamID64(steamID64)
+	if err != nil {
+		log.With("err", err).Error("failed to parse steamid64")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	ply, err := s.getPlayerSummary(ctx, steamID64)
+	if err != nil {
+		log.With("err", err).Error("failed to get player summary")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	data := PlayerData{
+		Username:    ply.Username,
+		Avatar:      ply.Avatar,
+		CustomURL:   ply.CustomURL,
+		ProfileURL:  fmt.Sprintf("https://steamcommunity.com/profiles/%s", ply.SteamID64),
+		CreatedAt:   time.Unix(ply.CreatedAt, 0).Format(time.ANSIC),
+		RealName:    ply.RealName,
+		SteamID32:   steamID.SteamID32String(),
+		SteamID64:   steamID.SteamID64String(),
+		Location:    ply.Location,
+		SteamID3:    steamID.SteamID3String(),
+		LastUpdated: time.Unix(ply.LastUpdated, 0).Format(time.RFC3339),
+	}
+
+	responses.CacheControlCacheForWeek(w, r)
+
+	err = s.tpl.ExecuteTemplate(w, "user.html", data)
+	if err != nil {
+		log.With("err", err).Error("failed to execute template")
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -195,6 +212,7 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.Redis
 	r.Get("/", s.getIndex)
 	r.Post("/search", s.PostSearch)
 	r.Get("/user/{steamid}", s.getUser)
+	r.Get("/api/user/{steamid}", s.getUserAPI)
 	r.Get("/lookup/{steamid}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, fmt.Sprintf("/user/%s", chi.URLParam(r, "steamid")), http.StatusSeeOther)
 	})

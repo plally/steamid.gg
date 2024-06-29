@@ -58,14 +58,16 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 type IndexData struct {
-	Error string
+	Error  string
+	Search string
 }
 
 func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
 	responses.CacheControlCache6Month(w, r)
 
 	err := s.tpl.ExecuteTemplate(w, "index.html", IndexData{
-		Error: r.URL.Query().Get("error"),
+		Error:  r.URL.Query().Get("error"),
+		Search: r.URL.Query().Get("search"),
 	})
 	if err != nil {
 		slog.With("err", err).Error("failed to execute template")
@@ -215,6 +217,13 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.Redis
 	r.Get("/api/user/{steamid}", s.getUserAPI)
 	r.Get("/lookup/{steamid}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, fmt.Sprintf("/user/%s", chi.URLParam(r, "steamid")), http.StatusSeeOther)
+	})
+	r.Get("/profiles/{steamid}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, fmt.Sprintf("/user/%s", chi.URLParam(r, "steamid")), http.StatusSeeOther)
+	})
+
+	r.Get("/id/{customurl}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, fmt.Sprintf("/?search=%s", chi.URLParam(r, "customurl")), http.StatusSeeOther)
 	})
 
 	fs, err := fs.Sub(resources, "public")

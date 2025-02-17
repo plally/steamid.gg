@@ -77,6 +77,7 @@ func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 type PlayerData struct {
+	Search      string `json:",omitempty"`
 	Username    string
 	Avatar      string
 	CustomURL   string

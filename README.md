@@ -1,2 +1,3 @@
 # steamid.gg
-A no frills steam ID lookup using serverside go templating.
+A simple steamID lookup tool using golang HTML templates, accessible at https://steamid.gg or https://steamid.gay
+

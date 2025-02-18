@@ -1,4 +1,4 @@
-package main
+package routes
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -35,7 +36,7 @@ func redirectError(w http.ResponseWriter, r *http.Request, err string) {
 	http.Redirect(w, r, fmt.Sprintf("/?error=%s", err), http.StatusSeeOther)
 }
 
-func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
+func (s *routeState) handlePostSearch(w http.ResponseWriter, r *http.Request) {
 	queryString := r.FormValue("search")
 	log := slog.With("query", queryString)
 	resp, err := matching.ParseSteamQuery(r.Context(), matching.ParseRequest{
@@ -44,7 +45,9 @@ func (s *routeState) PostSearch(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.With("err", err).Error("failed to parse query")
+		redirectError(w, r, "Failed to parse query")
 	}
+
 	if resp.SteamID == 0 {
 		if resp.Name != "" {
 			redirectError(w, r, fmt.Sprintf("Failed to resolve query as %v", resp.Name))
@@ -62,7 +65,7 @@ type IndexData struct {
 	Search string
 }
 
-func (s *routeState) getIndex(w http.ResponseWriter, r *http.Request) {
+func (s *routeState) handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	responses.CacheControlCache6Month(w, r)
 
 	err := s.tpl.ExecuteTemplate(w, "index.html", IndexData{
@@ -203,7 +206,12 @@ func (s *routeState) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.RedisStore) *chi.Mux {
+func GetRouter(steamAPI *steamapi.SteamAPI, db *db.RedisStore) *chi.Mux {
+	tpl, err := template.ParseFS(resources, "public/index.html", "public/user.html", "public/components.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	s := &routeState{
@@ -212,10 +220,11 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.Redis
 		db:       db,
 	}
 
-	r.Get("/", s.getIndex)
-	r.Post("/search", s.PostSearch)
+	r.Get("/", s.handleGetIndex)
+	r.Post("/search", s.handlePostSearch)
 	r.Get("/user/{steamid}", s.getUser)
 	r.Get("/api/user/{steamid}", s.getUserAPI)
+
 	r.Get("/lookup/{steamid}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, fmt.Sprintf("/user/%s", chi.URLParam(r, "steamid")), http.StatusSeeOther)
 	})
@@ -227,13 +236,19 @@ func GetRouter(steamAPI *steamapi.SteamAPI, tpl *template.Template, db *db.Redis
 		http.Redirect(w, r, fmt.Sprintf("/?search=%s", chi.URLParam(r, "customurl")), http.StatusSeeOther)
 	})
 
-	fs, err := fs.Sub(resources, "public")
+	fs, err := fs.Sub(resources, "public/static")
 	if err != nil {
 		panic(err)
 	}
 
-	r.Handle("/favicon.ico", http.FileServer(http.FS(fs)))
-	r.Handle("/static/*", http.FileServer(http.FS(fs)))
+	fileServer := http.FileServer(http.FS(fs))
+
+	r.Handle("/favicon.ico", fileServer)
+	r.Handle("/static/*", fileServer)
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
 
 	return r
 }

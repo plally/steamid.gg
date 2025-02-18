@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta property='og:title' content='{{.Username}}' />
+    <meta property='og:description' content="{{.SteamID64}}
+{{.SteamID32}}
+{{.CustomURL}}"/>
+    <meta property='og:image' content='{{.Avatar}}' />
+    <meta property='og:url' content='https://steamid.gay/user/{{.SteamID64}}' />
+    <meta property='og:type' content='website' />
+
+    <title>{{.Username}}</title>
+    <link rel="stylesheet" href="/static/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .avatar-container {
+            display: flex;
+            flex-direction: row;
+            margin-right: 20px;
+        }
+
+        img {
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .info-container {
+            margin: 0 auto;
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+        @media only screen and (max-width: 750px) {
+            .info-container {
+                width: 100%;
+            }
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 15px;
+        }
+
+        .info-item label,
+        .info-item p {
+            display: inline-block;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .profile-link {
+            color: #4bbfff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        p {
+            margin: 0;
+            color: #ccc;
+            margin-left: 3px;
+        }
+
+        .user-name {
+            font-size: 40px;
+            font-weight: bold;
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            margin-top: 20px;
+        }
+
+        .info-container h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0px;
+            margin-top: 20px;
+        }
+
+        hr {
+            border: none;
+            border-bottom: 1px solid #4bbfff;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        form {
+            margin: 0 auto;
+            margin-top: 20px;
+            width: 60%;
+        }
+
+        @media only screen and (max-width: 750px) {
+            form {
+                width: 100%;
+            }
+        }
+
+        .copy {
+            margin-left: auto;
+            cursor: pointer;
+            background-color: #1a1a1a; 
+            color: #ffffff; 
+            border: none;
+        }
+    </style>
+
+    <script src="/static/util.js"></script>
+</head>
+
+
+<body>
+    {{ define "item-content" }}
+        <p>{{.}}</p>
+        <button class="copy" onclick="navigator.clipboard.writeText({{.}});">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+    {{ end }}
+    <form action="/search" method="post">
+        {{ template "search-bar" . }}
+    </form>
+    <div class="info-container">
+        <div class="avatar-container">
+            <img src="{{.Avatar}}" alt="User Avatar">
+            <div class="user-name">{{.Username}}</div>
+        </div>
+        <h1>Profile Info</h1>
+        <hr>
+
+        <div class="info-item">
+            <label>Username:</label>
+            <p>{{.Username}}</p>
+        </div>
+
+        <div class="info-item">
+            {{ if .RealName }}
+            <label>Real Name:</label>
+            <p>{{.RealName}}</p>
+            {{ end }}
+        </div>
+
+        <div class="info-item">
+            {{ if .Location }}
+            <label>Location:</label>
+            <p>{{.Location}}</p>
+            {{ end }}
+        </div>
+
+        <div class="info-item">
+            <label>Account Creation Date:</label>
+            <p>{{.CreatedAt}}</p>
+        </div>
+
+        <div class="info-item">
+            {{ if .CustomURL }}
+            <label>Custom URL: </label>
+            <p><a href="{{.CustomURL}}" class="profile-link" target="_blank">{{.CustomURL}}</a></p>
+            {{ end }}
+        </div>
+
+        <div class="info-item">
+            {{ if .ProfileURL }}
+            <label>Profile URL:</label>
+            <p><a href="{{.ProfileURL}}" class="profile-link" target="_blank">{{.ProfileURL}}</a></p>
+            {{ end }}
+        </div>
+
+        <h1>IDs</h1>
+        <hr>
+        <div class="info-item">
+            <label>SteamID32:</label>
+            {{ template "item-content" .SteamID32 }}
+        </div>
+
+        <div class="info-item">
+            <label>SteamID64:</label>
+            {{ template "item-content" .SteamID64 }}
+        </div>
+
+        <div class="info-item">
+            <label>SteamID3:</label>
+            {{ template "item-content" .SteamID3 }}
+        </div>
+
+        <h1>Other</h1>
+        <hr>
+        <div class="info-item">
+            <label>Last Updated</label>
+            <p id="last-updated">{{.LastUpdated}}</p>
+        </div>
+    </div>
+</body>
+
+<script>
+    const lastUpdated = document.getElementById("last-updated");
+    
+    const lastUpdatedValue = new Date("{{.LastUpdated}}");
+    lastUpdated.textContent = formatTimestamp(lastUpdatedValue);
+</script>
+
+</html>

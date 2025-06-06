@@ -100,7 +100,11 @@ func (s *routeState) getPlayerSummary(ctx context.Context, steamID64 string) (*d
 	if err != nil {
 		return nil, err
 	}
-	if dbData != nil {
+
+	if dbData.Username == "" && dbData.LastUpdated < time.Now().Add(-10*time.Minute).Unix() {
+		slog.With("steamid", steamID64).Info("DB data is invalid and cached more than 10 minutes ago, fetching from API")
+		dbData = nil
+	} else if dbData != nil {
 		return dbData, nil
 	}
 

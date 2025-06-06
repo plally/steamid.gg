@@ -85,6 +85,7 @@ func (s *SteamAPI) doBatchRequest(requests []summaryRequest) {
 }
 
 func (s *SteamAPI) GetPlayerSummary(ctx context.Context, steamID string) (Player, error) {
+	// TODO propogate errors from steam api
 	c := make(chan Player)
 	req := summaryRequest{
 		steamID: steamID,
